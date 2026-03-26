@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Evil Tablet TV</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; transition: background 1.5s ease; }
+        
+        .eye { width: 160px; height: 100px; background: #f00; border-radius: 50%; box-shadow: 0 0 50px #f00; margin: 0 40px; transition: all 0.8s ease; position: relative; }
+        .eye::before { content: ''; position: absolute; top: -45px; width: 200px; height: 90px; background: #000; transition: 0.5s; left: -20px; }
+        
+        .mouth { width: 250px; height: 15px; background: #f00; border-radius: 50%; box-shadow: 0 0 40px #f00; transition: all 0.6s ease; margin-top: 60px; }
+
+        /* --- SUPER BLIJ MODUS --- */
+        body.super-blij { background: #87CEEB; }
+        .super-blij .eye { 
+            background: #fff; 
+            box-shadow: 0 0 30px #fff, inset 0 0 20px #008cff; 
+            height: 160px; width: 160px; border-radius: 50%; 
+        }
+        .super-blij .eye::before { transform: translateY(-200px); }
+        .super-blij .mouth { 
+            background: #fff; 
+            height: 150px; width: 350px; 
+            border-radius: 0 0 175px 175px;
+            box-shadow: 0 10px 30px rgba(255,255,255,0.4); 
+        }
+
+        /* ANDERE STATES */
+        .angry .eye::before { transform: translateY(45px) rotate(15deg); }
+        .glitch { animation: shake 0.1s infinite; }
+        @keyframes shake { 0% { transform: translate(2px, 2px); } 50% { transform: translate(-2px, -2px); } }
+
+        #overlay { position: fixed; inset: 0; background: #000; color: #fff; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 100; font-family: sans-serif; font-size: 20px; text-align: center; }
+        .blink .eye { height: 2px !important; }
+    </style>
+</head>
+<body id="body">
+    <div id="overlay" onclick="startApp()">KLIK HIER OM HET SYSTEEM TE STARTEN</div>
+    <div id="face">
+        <div style="display: flex;">
+            <div class="eye"></div>
+            <div class="eye"></div>
+        </div>
+        <div class="mouth" id="mouth"></div>
+    </div>
+
+    <script>
+        // JE NIEUWE FIREBASE CONFIG
+        const firebaseConfig = {
+          apiKey: "AIzaSyAGvUwRjfQQ0QSh2S4n6mGf8k7sZlBggEs",
+          authDomain: "tradingpost-57b20.firebaseapp.com",
+          databaseURL: "https://tradingpost-57b20-default-rtdb.europe-west1.firebasedatabase.app",
+          projectId: "tradingpost-57b20",
+          storageBucket: "tradingpost-57b20.firebasestorage.app",
+          messagingSenderId: "358205969306",
+          appId: "1:358205969306:web:2d3b1cff4ab4170ffca023",
+          measurementId: "G-ZK8SXYYDRF"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function startApp() {
+            document.getElementById('overlay').style.display = 'none';
+            // Luister naar emotie-wisselingen
+            db.ref('tablet_emotion').on('value', s => { document.body.className = s.val() || 'normal'; });
+            // Luister naar AI spraak
+            db.ref('tablet_speech').on('value', s => {
+                const data = s.val();
+                if(data && data.text) praat(data.text);
+            });
+        }
+
+        function praat(tekst) {
+            const synth = window.speechSynthesis;
+            const ut = new SpeechSynthesisUtterance(tekst);
+            ut.lang = 'nl-NL';
+            
+            const isHappy = document.body.classList.contains('super-blij');
+            ut.pitch = isHappy ? 1.4 : 0.1; // Hoog bij blij, super laag bij evil
+            ut.rate = isHappy ? 1.1 : 0.8;
+
+            let mInterval = setInterval(() => {
+                let h = isHappy ? (Math.random() * 60 + 120) : (Math.random() * 100 + 20);
+                document.getElementById('mouth').style.height = h + "px";
+            }, 100);
+
+            ut.onend = () => {
+                clearInterval(mInterval);
+                document.getElementById('mouth').style.height = isHappy ? "150px" : "15px";
+            };
+            synth.speak(ut);
+        }
+
+        // Knipperen
+        setInterval(() => {
+            document.body.classList.add('blink');
+            setTimeout(() => document.body.classList.remove('blink'), 150);
+        }, 4000);
+    </script>
+</body>
+</html>
