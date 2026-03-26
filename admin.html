@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Tablet Admin</title>
+    <!-- Firebase SDK (Compat mode voor makkelijk gebruik) -->
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #1a1a1a; color: white; padding: 20px; text-align: center; }
+        textarea { width: 100%; height: 80px; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; box-sizing: border-box; font-size: 16px; background: #333; color: white; }
+        button { width: 100%; padding: 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin-bottom: 10px; font-size: 16px; }
+        .ai-btn { background: #f00; color: white; box-shadow: 0 4px #900; }
+        .ai-btn:active { transform: translateY(2px); box-shadow: 0 2px #900; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        .emo { background: #444; color: white; font-size: 14px; }
+        .happy-btn { background: #008cff !important; font-size: 18px !important; grid-column: span 2; }
+    </style>
+</head>
+<body>
+
+    <h1>AI Controller</h1>
+
+    <textarea id="prompt" placeholder="Wat gebeurt er? (bijv: De kinderen hebben gewonnen)"></textarea>
+    <button class="ai-btn" onclick="vraagGemini()">VRAAG AI OM REACTIE</button>
+
+    <div class="grid">
+        <button class="emo" onclick="setEmotion('normal')">Enge Tablet</button>
+        <button class="emo" onclick="setEmotion('angry')">Heel Boos</button>
+        <button class="emo" onclick="setEmotion('glitch')">Kortsluiting</button>
+        <button class="emo happy-btn" onclick="setEmotion('super-blij')">🌟 SUPER BLIJ (Gered!)</button>
+    </div>
+
+    <script>
+        // JE NIEUWE FIREBASE CONFIG
+        const firebaseConfig = {
+          apiKey: "AIzaSyAGvUwRjfQQ0QSh2S4n6mGf8k7sZlBggEs",
+          authDomain: "tradingpost-57b20.firebaseapp.com",
+          databaseURL: "https://tradingpost-57b20-default-rtdb.europe-west1.firebasedatabase.app",
+          projectId: "tradingpost-57b20",
+          storageBucket: "tradingpost-57b20.firebasestorage.app",
+          messagingSenderId: "358205969306",
+          appId: "1:358205969306:web:2d3b1cff4ab4170ffca023",
+          measurementId: "G-ZK8SXYYDRF"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // JOUW GEMINI API KEY
+        const GEMINI_KEY = "AIzaSyASHbeVraeWpBKfLN2Jj2kHGFJ1KlEj3nY";
+
+        async function vraagGemini() {
+            const prompt = document.getElementById('prompt').value || "Zeg iets gemeens tegen de kinderen.";
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: `Reageer als de 'Evil Tablet' uit Toy Story. Je steelt energie van Buzz Lightyear. De situatie is: ${prompt}. Geef een korte, gemene reactie van maximaal 12 woorden in het Nederlands. Als je hoort dat de kinderen gewonnen hebben of Buzz gered is, reageer dan juist overdreven vrolijk en lief.` }]}]
+                    })
+                });
+
+                const data = await response.json();
+                const aiTekst = data.candidates[0].content.parts[0].text;
+
+                // Stuur tekst naar Firebase Realtime Database
+                db.ref('tablet_speech').set({ text: aiTekst, t: Date.now() });
+                document.getElementById('prompt').value = "";
+            } catch (e) {
+                alert("AI Foutje! Check je internet of API key.");
+                console.error(e);
+            }
+        }
+
+        function setEmotion(e) { 
+            db.ref('tablet_emotion').set(e); 
+        }
+    </script>
+</body>
+</html>
